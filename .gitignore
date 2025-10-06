@@ -1,0 +1,29 @@
+node_modules
+# Keep environment variables out of version control
+.env
+
+/generated/prisma
+venv
+
+# Virtual Environment
+.venv/
+venv/
+env/
+# Pip/Packaging
+__pycache__/
+*.pyc
+*.pyd
+*.egg-info/
+.Python
+build/
+dist/
+# macOS
+.DS_Store
+# Visual Studio Code
+.vscode/
+
+# PyCharm/IntelliJ
+.idea/
+
+# Atom
+.atom/
