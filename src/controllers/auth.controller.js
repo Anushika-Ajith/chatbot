@@ -33,6 +33,7 @@ export async function loginUser(req, res) {
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES_IN }
     );
+    console.log("TOKEN:", token)
 
     res.json({
       message: "Login successful",

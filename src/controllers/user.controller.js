@@ -24,3 +24,4 @@ export async function registerUser(req, res) {
     res.status(500).json({ error: "Server error" });
   }
 }
+

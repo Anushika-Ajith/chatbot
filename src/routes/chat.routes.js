@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createChatSession, createAppointment } from "../controllers/chat.controller.js";
+import { createChatSession, createAppointment, emitBotMessage } from "../controllers/chat.controller.js";
 import { authenticateToken } from "../middleware/auth.middleware.js";
 
 const router = Router();
@@ -57,5 +57,12 @@ router.post("/session", authenticateToken, createChatSession);
  *         description: Appointment created
  */
 router.post("/appointment", authenticateToken, createAppointment);
+
+/**
+ * @route   POST /api/chat/emit
+ * @desc    Emit a bot message to the chat room in real time (used by Python microservice)
+ * @body    { roomId, sender, content }
+ */
+router.post("/emit", emitBotMessage );
 
 export default router;

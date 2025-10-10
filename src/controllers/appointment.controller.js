@@ -1,106 +1,80 @@
-import { prisma } from "../config/db.js";
-import { addMinutes, isBefore } from "date-fns";
+import { AppointmentService } from "../services/appointment.service.js";
+import { successResponse, errorResponse } from "../utils/apiResponse.js";
 
-/**
- * Check provider availability for a given time range
- */
-export async function checkAvailability(req, res) {
+export const createAppointment = async (req, res) => {
   try {
-    const { providerId, startTime, endTime } = req.query;
+    const { userId, providerId, chatSessionId, startTime, endTime, metadata } = req.body;
 
-    const overlapping = await prisma.appointment.findFirst({
-      where: {
-        providerId,
-        status: { in: ["HELD", "CONFIRMED"] },
-        OR: [
-          {
-            startTime: { lt: new Date(endTime) },
-            endTime: { gt: new Date(startTime) },
-          },
-        ],
-      },
+    if (!userId || !providerId || !startTime || !endTime) {
+      return errorResponse(res, "Missing required fields: userId, providerId, startTime, endTime");
+    }
+
+    const appointment = await AppointmentService.createAppointment({
+      userId,
+      providerId,
+      chatSessionId,
+      startTime,
+      endTime,
+      metadata,
     });
 
-    res.json({ available: !overlapping });
+    return successResponse(res, "Appointment created successfully", appointment);
   } catch (error) {
-    console.error("Error checking availability:", error);
-    res.status(500).json({ error: "Failed to check availability" });
+    console.error("Error in createAppointment:", error);
+    return errorResponse(res, "Server error", 500);
   }
-}
+};
 
-/**
- * Hold a time slot temporarily
- */
-export async function holdSlot(req, res) {
+export const getAppointmentById = async (req, res) => {
   try {
-    const { userId, providerId, chatSessionId, startTime, endTime } = req.body;
-
-    // Check if already booked
-    const overlapping = await prisma.appointment.findFirst({
-      where: {
-        providerId,
-        status: { in: ["HELD", "CONFIRMED"] },
-        OR: [
-          {
-            startTime: { lt: new Date(endTime) },
-            endTime: { gt: new Date(startTime) },
-          },
-        ],
-      },
-    });
-
-    if (overlapping) {
-      return res.status(409).json({ error: "Slot already taken" });
-    }
-
-    const appointment = await prisma.appointment.create({
-      data: {
-        userId,
-        providerId,
-        chatSessionId,
-        startTime: new Date(startTime),
-        endTime: new Date(endTime),
-        status: "HELD",
-        holdExpiresAt: addMinutes(new Date(), 5), // 5-min hold
-      },
-    });
-
-    res.status(201).json({ message: "Slot held successfully", appointment });
+    const appointment = await AppointmentService.getAppointmentById(req.params.id);
+    if (!appointment) return errorResponse(res, "Appointment not found", 404);
+    return successResponse(res, "Appointment fetched successfully", appointment);
   } catch (error) {
-    console.error("Error holding slot:", error);
-    res.status(500).json({ error: "Failed to hold slot" });
+    console.error("Error in getAppointmentById:", error);
+    return errorResponse(res, "Server error", 500);
   }
-}
+};
 
-/**
- * Confirm appointment
- */
-export async function confirmAppointment(req, res) {
+export const getAppointmentsByUser = async (req, res) => {
   try {
-    const { id } = req.params;
-
-    const appointment = await prisma.appointment.findUnique({ where: { id } });
-
-    if (!appointment) {
-      return res.status(404).json({ error: "Appointment not found" });
-    }
-
-    if (appointment.status !== "HELD") {
-      return res.status(400).json({ error: "Only held appointments can be confirmed" });
-    }
-
-    if (appointment.holdExpiresAt && isBefore(appointment.holdExpiresAt, new Date())) {
-      return res.status(410).json({ error: "Hold expired" });
-    }
-
-    const updated = await prisma.appointment.update({
-      where: { id },
-      data: { status: "CONFIRMED", holdExpiresAt: null },
-    });
-
-    res.json({ message: "Appointment confirmed", appointment: updated });
+    const appointments = await AppointmentService.getAppointmentsByUser(req.params.userId);
+    return successResponse(res, "User appointments fetched successfully", appointments);
   } catch (error) {
-    console.error("Error confirming appointment:", error);
-    res.status(500).json({ error: "Failed to confirm appointment" });
+    console.error("Error in getAppointmentsByUser:", error);
+    return errorResponse(res, "Server error", 500);
   }
-}
+};
+
+export const getAppointmentsByProvider = async (req, res) => {
+  try {
+    const appointments = await AppointmentService.getAppointmentsByProvider(req.params.providerId);
+    return successResponse(res, "Provider appointments fetched successfully", appointments);
+  } catch (error) {
+    console.error("Error in getAppointmentsByProvider:", error);
+    return errorResponse(res, "Server error", 500);
+  }
+};
+
+export const updateAppointmentStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!status) return errorResponse(res, "Status is required");
+
+    const appointment = await AppointmentService.updateAppointmentStatus(req.params.id, status);
+    return successResponse(res, "Appointment status updated", appointment);
+  } catch (error) {
+    console.error("Error in updateAppointmentStatus:", error);
+    return errorResponse(res, "Server error", 500);
+  }
+};
+
+export const deleteAppointment = async (req, res) => {
+  try {
+    const deleted = await AppointmentService.softDeleteAppointment(req.params.id);
+    return successResponse(res, "Appointment cancelled successfully", deleted);
+  } catch (error) {
+    console.error("Error in deleteAppointment:", error);
+    return errorResponse(res, "Server error", 500);
+  }
+};

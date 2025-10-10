@@ -1,8 +1,6 @@
 import { prisma } from "../config/db.js";
+import { getIO } from "../socket/chat.gateway.js";
 
-/**
- * Create a new chat session for a user
- */
 export async function createChatSession(req, res) {
   try {
     const { userId } = req.body;
@@ -18,9 +16,6 @@ export async function createChatSession(req, res) {
   }
 }
 
-/**
- * Create a new appointment linked to a chat session
- */
 export async function createAppointment(req, res) {
   try {
     const { userId, providerId, chatSessionId, startTime, endTime } = req.body;
@@ -40,5 +35,17 @@ export async function createAppointment(req, res) {
     console.error(error);
     res.status(500).json({ error: "Failed to create appointment" });
   }
+  
 }
-    
+
+export const emitBotMessage = (req, res) => {
+  const io = getIO(); 
+  if (!io) {
+    return res.status(500).json({ message: "Socket.io not initialized" });
+  }
+
+  const { roomId, message } = req.body;
+  io.to(roomId).emit("new_message", message);
+
+  res.json({ success: true });
+};

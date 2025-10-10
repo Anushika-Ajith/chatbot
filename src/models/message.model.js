@@ -2,9 +2,9 @@ import mongoose from "mongoose";
 
 const messageSchema = new mongoose.Schema(
   {
-    chatSessionId: {
+    sessionId: {
       type: String,
-      required: true, // corresponds to Prisma ChatSession.id (UUID)
+      required: true, 
     },
     sender: {
       type: String,
@@ -16,18 +16,18 @@ const messageSchema = new mongoose.Schema(
       required: true,
     },
     model: {
-      type: String, // optional: store which LLM model was used
+      type: String, 
     },
     tokensUsed: {
       type: Number,
       default: 0,
     },
     rawResponse: {
-      type: Object, // store LLM metadata, if any
+      type: Object, 
       default: {},
     },
   },
-  { timestamps: true } // adds createdAt and updatedAt
+  { timestamps: true }
 );
 
 export const Message = mongoose.model("Message", messageSchema);

@@ -5,8 +5,12 @@ dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET;
 
 export function authenticateToken(req, res, next) {
+  
+  console.log("req",req.headers)
+
   const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1]; // Expect "Bearer <token>"
+  console.log("Header: ",authHeader)
+  const token = authHeader && authHeader.split(" ")[1]; 
 
   if (!token) {
     return res.status(401).json({ error: "Access denied. No token provided." });
@@ -17,7 +21,7 @@ export function authenticateToken(req, res, next) {
       return res.status(403).json({ error: "Invalid or expired token." });
     }
 
-    req.user = user; // Attach user data to request
+    req.user = user; 
     next();
   });
 }
